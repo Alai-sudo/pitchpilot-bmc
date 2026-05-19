@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PitchPilot 功能说明 / Feature Reference</title>
+<meta name="description" content="PitchPilot 内部功能说明：工作流、创作模式、talent 矩阵、输入与协作、输出与部署" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --ink: #1a1a1a;
+    --ink-2: #3a3a3a;
+    --muted: #6b6b6b;
+    --line: #e8e3da;
+    --line-strong: #d5cec0;
+    --accent: #1d4ed8;
+    --accent-soft: #eef2ff;
+    --warn: #b45309;
+    --warn-soft: #fef3c7;
+    --good: #047857;
+    --good-soft: #d1fae5;
+    --bad: #b91c1c;
+    --bad-soft: #fee2e2;
+    --info: #6366f1;
+    --info-soft: #ede9fe;
+    --shadow: 0 1px 0 rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-strong: 0 4px 16px rgba(0,0,0,0.06);
+    --radius: 8px;
+    --fs-2xs: 0.6875rem;
+    --fs-xs: 0.75rem;
+    --fs-sm: 0.8125rem;
+    --fs-base: 0.9375rem;
+    --fs-md: 1.0625rem;
+    --fs-lg: 1.25rem;
+    --fs-xl: 1.5rem;
+    --fs-2xl: 2rem;
+    --fs-3xl: 2.75rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1814;
+      --surface: #232019;
+      --ink: #f0ede5;
+      --ink-2: #d0cdc5;
+      --muted: #8a8680;
+      --line: #3a352d;
+      --line-strong: #4d473c;
+      --accent: #93c5fd;
+      --accent-soft: #1e293b;
+      --warn: #fbbf24;
+      --warn-soft: #292015;
+      --good: #6ee7b7;
+      --good-soft: #14241c;
+      --bad: #fca5a5;
+      --bad-soft: #2a1717;
+      --info: #c4b5fd;
+      --info-soft: #1e1b2e;
+      --shadow: 0 1px 0 rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-strong: 0 4px 16px rgba(0,0,0,0.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: var(--fs-base);
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Top nav */
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(250, 248, 245, 0.85);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  @media (prefers-color-scheme: dark) {
+    .topnav { background: rgba(26, 24, 20, 0.85); }
+  }
+  .topnav-inner {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .brand {
+    font-weight: 600;
+    font-size: var(--fs-md);
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: -0.005em;
+  }
+  .brand .dot { color: var(--accent); }
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    font-size: var(--fs-sm);
+  }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+    font-weight: 500;
+  }
+  .nav-links a:hover { background: var(--line); color: var(--ink); }
+  .nav-links a.active { color: var(--ink); background: var(--line); }
+
+  .wrap {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 48px 32px 96px;
+  }
+
+  /* Hero */
+  header.hero {
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: var(--fs-3xl);
+    font-weight: 700;
+    margin: 0 0 12px;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  h1 .sub {
+    display: block;
+    font-size: var(--fs-lg);
+    font-weight: 400;
+    color: var(--muted);
+    margin-top: 8px;
+    letter-spacing: 0;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-top: 24px;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+  }
+  .meta-row strong {
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+
+  /* Section */
+  h2 {
+    font-size: var(--fs-2xl);
+    font-weight: 600;
+    margin: 64px 0 8px;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 80px;
+  }
+  h2 .num {
+    color: var(--muted);
+    font-weight: 400;
+    margin-right: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  h2 + .lede {
+    font-size: var(--fs-md);
+    color: var(--muted);
+    margin: 0 0 32px;
+    max-width: 72ch;
+  }
+  h3 {
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    margin: 32px 0 12px;
+    letter-spacing: -0.005em;
+  }
+
+  /* Workflow */
+  .workflow {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line-strong);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-strong);
+  }
+  .phase-card {
+    background: var(--surface);
+    padding: 28px 30px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .phase-card .phase-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .phase-card .phase-num {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  .phase-card.preview .phase-num { background: var(--good-soft); color: var(--good); }
+  .phase-card.plan .phase-num { background: var(--warn-soft); color: var(--warn); }
+  .phase-card h3 { margin: 0; font-size: var(--fs-md); font-weight: 600; }
+  .phase-card .what {
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+  .phase-card ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+  }
+  .phase-card li {
+    padding: 5px 0 5px 16px;
+    position: relative;
+    color: var(--ink-2);
+  }
+  .phase-card li::before {
+    content: "·";
+    position: absolute;
+    left: 4px;
+    top: 3px;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  @media (max-width: 900px) {
+    .workflow { grid-template-columns: 1fr; }
+  }
+
+  /* Mode matrix */
+  .matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .matrix-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+  }
+  .matrix-card h3 {
+    margin: 0 0 12px;
+    font-size: var(--fs-md);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .matrix-card h3 .en {
+    font-size: var(--fs-xs);
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .opt {
+    border-top: 1px dashed var(--line);
+    padding: 12px 0;
+  }
+  .opt:first-of-type { border-top: none; padding-top: 0; }
+  .opt-name {
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+  .opt-desc {
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  @media (max-width: 800px) {
+    .matrix { grid-template-columns: 1fr; }
+  }
+
+  /* Tables */
+  .tbl-wrap {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    background: var(--surface);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-sm);
+  }
+  thead { background: var(--bg); }
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: var(--ink);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+  }
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-2);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  tr:last-child td { border-bottom: none; }
+  td code {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.85em;
+    background: var(--bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  td strong { color: var(--ink); font-weight: 600; }
+  .cat-pill {
+    display: inline-block;
+    font-size: var(--fs-2xs);
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .cat-skill   { background: var(--accent-soft); color: var(--accent); }
+  .cat-toolchain { background: var(--info-soft); color: var(--info); }
+  .cat-knowledge { background: var(--warn-soft); color: var(--warn); }
+
+  /* Two-column cards */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+  }
+  .card.bordered { border-left: 3px solid var(--accent); }
+  .card.bordered.good { border-left-color: var(--good); }
+  .card.bordered.warn { border-left-color: var(--warn); }
+  .card.bordered.bad { border-left-color: var(--bad); }
+  .card h3 {
+    margin: 0 0 12px;
+    font-size: var(--fs-md);
+    font-weight: 600;
+  }
+  .card ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: var(--fs-sm);
+  }
+  .card li {
+    margin-bottom: 8px;
+    color: var(--ink-2);
+  }
+  .card li strong { color: var(--ink); }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* Inline pill */
+  .pill {
+    display: inline-block;
+    font-size: var(--fs-2xs);
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 6px;
+    letter-spacing: 0.02em;
+  }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+  .pill.bad  { background: var(--bad-soft);  color: var(--bad); }
+  .pill.info { background: var(--info-soft); color: var(--info); }
+
+  /* PPTX layout chips */
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .chip {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: var(--fs-xs);
+    padding: 4px 10px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--ink-2);
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-size: var(--fs-xs);
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 32px 16px 64px; }
+    .topnav-inner { padding: 12px 16px; }
+    h1 { font-size: var(--fs-2xl); }
+    h2 { font-size: var(--fs-xl); }
+  }
+
+  @media print {
+    body { background: white; }
+    .topnav { display: none; }
+    .wrap { max-width: none; padding: 16px; }
+    .card, .matrix-card, .phase-card, .tbl-wrap { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="./" class="brand">PitchPilot<span class="dot">.</span></a>
+    <div class="nav-links">
+      <a href="./">商业模式画布</a>
+      <a href="./features.html" class="active">功能说明</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Feature Reference · 内部团队文档</div>
+  <h1>
+    PitchPilot 功能说明
+    <span class="sub">PM / BD / 设计 / 新同事的功能全量参考</span>
+  </h1>
+  <div class="meta-row">
+    <span><strong>一句话</strong>　对话式 AI Pitch 生成器，从 Confluence / 文件 / 对话出发，自动产出 HTML 或 PPTX deck</span>
+  </div>
+  <div class="meta-row">
+    <span><strong>核心承诺</strong>　从 0 到一份可用 Pitch 材料 ≤ 15 分钟</span>
+    <span><strong>更新</strong>　2026-05-19</span>
+    <span><strong>双部署</strong>　EKS+Arx（多 agent 完整版）/ Cloudflare Workers（轻量 SaaS 版）</span>
+  </div>
+</header>
+
+<!-- ============================================== -->
+<h2 id="workflow"><span class="num">01</span>工作流：三阶段</h2>
+<p class="lede">每个 deck 都按 <code>gather → plan → preview</code> 三阶段推进。阶段不是强制的——用户可随时跳转——但模型按当前阶段调整发言策略，UI 也会切换主面板。</p>
+
+<div class="workflow">
+
+  <div class="phase-card">
+    <div class="phase-head">
+      <span class="phase-num">1</span>
+      <h3>Gather · 收集</h3>
+    </div>
+    <p class="what">弄清楚要做什么。受众、目标、场景、关键信息。</p>
+    <ul>
+      <li>对话收集 audience / goal / scene / key messages</li>
+      <li>用户可粘贴图片 / 拖拽文件 / 引用 Confluence 页面</li>
+      <li>右侧主面板：<strong>ConceptCloud</strong> 实时可视化已收集到的概念</li>
+      <li>触发 talent：<code>pp-gather</code> + <code>pp-confluence</code> + <code>pp-url-parser</code></li>
+      <li>"准备好了"由 <code>pp-planner</code> 判断并主动进入 plan 阶段</li>
+    </ul>
+  </div>
+
+  <div class="phase-card plan">
+    <div class="phase-head">
+      <span class="phase-num">2</span>
+      <h3>Plan · 策划</h3>
+    </div>
+    <p class="what">把素材组织成有叙事逻辑的 storyboard。</p>
+    <ul>
+      <li>右侧主面板切换为 <strong>storyboard 编辑器</strong>（Tiptap / Vditor）</li>
+      <li>AI 生成 markdown 草稿，用户可编辑 / 让 AI 重写局部</li>
+      <li>触发 talent：<code>pp-planner</code> + <code>pp-narrative</code> + <code>pp-speaker</code></li>
+      <li>编辑时存在 <em>AI editing lock</em>，避免人和 AI 同时改</li>
+      <li>storyboard 是 deck 的一等公民，会被持久化到 deck 的 storage</li>
+    </ul>
+  </div>
+
+  <div class="phase-card preview">
+    <div class="phase-head">
+      <span class="phase-num">3</span>
+      <h3>Preview · 构建</h3>
+    </div>
+    <p class="what">把 storyboard 转为可视化幻灯片。</p>
+    <ul>
+      <li>进入时弹出 <strong>BuildModePicker</strong>，选 HTML 或 PPTX</li>
+      <li>右侧切换为 <strong>PreviewPanel</strong>，单页渐进式渲染，带 building overlay</li>
+      <li>HTML 模式：触发 <code>pp-deck-builder</code> + <code>pp-deck-designer</code></li>
+      <li>PPTX 模式：触发 <code>pp-deck-builder-pptx</code>，按 9 种 layout 模板装配</li>
+      <li>逐张幻灯片可被点击进入 inline 编辑或让 AI 修改</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ============================================== -->
+<h2 id="modes"><span class="num">02</span>创作模式：两个维度</h2>
+<p class="lede">每个 deck 有两个独立维度的"模式"——多 agent 协同方式（chat_mode）+ 输出形态（build_mode）。两者正交，可任意组合。</p>
+
+<div class="matrix">
+
+  <div class="matrix-card">
+    <h3>Chat Mode<span class="en">多 agent 协同</span></h3>
+    <div class="opt">
+      <div class="opt-name"><span class="pill">默认</span>Group · 群聊</div>
+      <div class="opt-desc">所有在线 tulpa 都收到每条消息，按各自人设决定是否回应（通过 <code>[SILENT]</code> 协议保持安静）。消息会被注入"成员名册 + 群规"上下文。适合多 agent 自主分工。</div>
+    </div>
+    <div class="opt">
+      <div class="opt-name">Relay · 中继</div>
+      <div class="opt-desc">按当前 phase 路由到单个 agent：<code>gather</code> / <code>plan</code> → planner；<code>preview</code> → builder。适合结构化、可预测的流水线。</div>
+    </div>
+  </div>
+
+  <div class="matrix-card">
+    <h3>Build Mode<span class="en">输出形态</span></h3>
+    <div class="opt">
+      <div class="opt-name"><span class="pill">默认</span>HTML</div>
+      <div class="opt-desc">Web-native 幻灯片，单 fragment 文件，可在浏览器直接演讲。支持复杂动画、自定义字体、SVG 图表。分享一个链接即可。</div>
+    </div>
+    <div class="opt">
+      <div class="opt-name">PPTX</div>
+      <div class="opt-desc">原生 .pptx 文件，9 个 layout 模板装配。可下载、可在 PowerPoint 离线编辑。客户要"可编辑文件"时用这个。生成时需选 theme。</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================== -->
+<h2 id="talents"><span class="num">03</span>内置 Talents：12 个</h2>
+<p class="lede">Talent 是 PP 的核心扩展点——每个 talent 是 AI agent 的一项能力（skill / 工具链 / 知识包）。Agent 会按对话上下文自动激活相关 talent。</p>
+
+<div class="tbl-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width: 22%">Talent</th>
+      <th style="width: 10%">类型</th>
+      <th style="width: 30%">职责</th>
+      <th>典型触发场景</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>pp-gather</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>从对话提取 audience / goal / key messages，构建 ConceptCloud</td>
+      <td>用户首次描述 pitch 需求时</td>
+    </tr>
+    <tr>
+      <td><strong>pp-narrative</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>叙事框架库：story 弧线、受众驱动叙事</td>
+      <td>plan 阶段，组织 storyboard 时</td>
+    </tr>
+    <tr>
+      <td><strong>pp-sales-pitch</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>销售 Pitch 专家：deal-stage 框架、竞争定位</td>
+      <td>用户明确"这是销售用 deck"时</td>
+    </tr>
+    <tr>
+      <td><strong>pp-speaker</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>生成演讲备注、stage direction</td>
+      <td>storyboard 完成后或用户索要 speaker notes</td>
+    </tr>
+    <tr>
+      <td><strong>pp-deck-builder</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>HTML 幻灯片工程：fragment 格式、manifest.json、生命周期</td>
+      <td>preview 阶段 + build_mode = html</td>
+    </tr>
+    <tr>
+      <td><strong>pp-deck-builder-pptx</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>原生 PPTX 工程：按 9 个 layout 输出 slide-NN.json</td>
+      <td>preview 阶段 + build_mode = pptx</td>
+    </tr>
+    <tr>
+      <td><strong>pp-deck-designer</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>Dify Swiss 设计系统：白底、三色调色板、Söhne+MiSans、非对称排版、零装饰</td>
+      <td>所有 build 阶段的视觉约束</td>
+    </tr>
+    <tr>
+      <td><strong>pp-confluence</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>搜索和读取 Confluence 页面</td>
+      <td>用户提到 wiki / Confluence / 公司知识库时</td>
+    </tr>
+    <tr>
+      <td><strong>pp-url-parser</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>检测消息里的 URL，抓取并结构化提取</td>
+      <td>消息含 http(s):// 链接时</td>
+    </tr>
+    <tr>
+      <td><strong>pp-web-research</strong></td>
+      <td><span class="cat-pill cat-skill">skill</span></td>
+      <td>Web 搜索 + 综合：市场数据、竞品、引用</td>
+      <td>需要外部素材但 Confluence 没有时</td>
+    </tr>
+    <tr>
+      <td><strong>pp-cli</strong></td>
+      <td><span class="cat-pill cat-toolchain">toolchain</span></td>
+      <td><code>pp</code> CLI：<code>save</code> / <code>sync</code> / <code>download</code> / <code>ls</code>，deck 文件锁、Confluence 代理</td>
+      <td>所有 agent 内部 IO 操作</td>
+    </tr>
+    <tr>
+      <td><strong>pp-dify-context</strong></td>
+      <td><span class="cat-pill cat-knowledge">knowledge</span></td>
+      <td>Dify 公司身份、使命、愿景、价值观、tone</td>
+      <td>需要"on-brand"输出的所有场景（默认加载）</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ============================================== -->
+<h2 id="inputs"><span class="num">04</span>输入与上下文</h2>
+<p class="lede">PP 不让用户从空白开始——所有创作都建立在真实素材上。四种输入方式覆盖企业知识库、本地文件、外部链接、Web 现场搜索。</p>
+
+<div class="grid-2">
+
+  <div class="card bordered">
+    <h3>Confluence 集成</h3>
+    <ul>
+      <li>OAuth 2.0 接入企业 Atlassian 账号</li>
+      <li>侧滑 <strong>ConfluencePanel</strong>：浏览 space / 搜索 / 选择页面</li>
+      <li>页面以引用方式绑定到 deck，自动转 markdown 注入对话</li>
+      <li>支持 @mention 解析、附件 / image 拉取</li>
+      <li>页面更新后可重新拉取（不自动轮询，按需）</li>
+    </ul>
+  </div>
+
+  <div class="card bordered">
+    <h3>文件上传</h3>
+    <ul>
+      <li>PDF / Word / Excel / 图片 / Markdown / TXT</li>
+      <li>拖拽到聊天框，或从剪贴板粘贴图片</li>
+      <li>上传后立即作为 agent context；持久化到 deck storage</li>
+      <li>文件管理：<strong>FileViewerDrawer</strong> 查看 / 删除 / 重新发送</li>
+    </ul>
+  </div>
+
+  <div class="card bordered">
+    <h3>URL 解析</h3>
+    <ul>
+      <li><code>pp-url-parser</code> 自动检测消息里的 URL</li>
+      <li>抓取页面 → 提取标题、正文、关键数据</li>
+      <li>适合引用产品文档、竞品页、新闻稿</li>
+    </ul>
+  </div>
+
+  <div class="card bordered">
+    <h3>Web 搜索</h3>
+    <ul>
+      <li><code>pp-web-research</code> 在 Confluence 没有素材时兜底</li>
+      <li>搜索 + 综合多源 → 结构化输出（带引用）</li>
+      <li>适合市场数据、竞品分析、行业数字</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ============================================== -->
+<h2 id="collab"><span class="num">05</span>协作与多租户</h2>
+<p class="lede">PP 是多用户系统。组织粒度从高到低：Workspace（团队）→ Folder（项目分组）→ Deck（单个 pitch）→ Deck Members（per-deck 权限）。</p>
+
+<div class="tbl-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width: 18%">单位</th>
+      <th>说明</th>
+      <th style="width: 26%">权限模型</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Workspace</strong></td>
+      <td>团队容器。一个用户可属于多个 workspace，每个 workspace 独立计费、独立 API key、独立成员名单</td>
+      <td>owner / admin / member</td>
+    </tr>
+    <tr>
+      <td><strong>Folder</strong></td>
+      <td>Workspace 内部的 deck 分组，用于按项目 / 客户 / 季度组织</td>
+      <td>继承 workspace</td>
+    </tr>
+    <tr>
+      <td><strong>Deck</strong></td>
+      <td>单个 pitch 文档。属于 workspace + 可选 folder</td>
+      <td>workspace 成员默认可见</td>
+    </tr>
+    <tr>
+      <td><strong>Deck Members</strong></td>
+      <td>per-deck 显式成员（细粒度覆盖 workspace 默认）</td>
+      <td>owner / editor / viewer</td>
+    </tr>
+    <tr>
+      <td><strong>Share Link</strong></td>
+      <td>对外公开访问链接，无需登录</td>
+      <td>token-based，可随时撤销</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ============================================== -->
+<h2 id="editing"><span class="num">06</span>编辑、预览与版本</h2>
+<p class="lede">deck 是活的文档——AI 写、人编辑、版本追溯。三个核心交互面板加一套版本系统。</p>
+
+<div class="grid-3">
+
+  <div class="card">
+    <h3>ConceptCloud</h3>
+    <ul>
+      <li>gather 阶段的主面板</li>
+      <li>渐变文字 + 发光节点的概念图</li>
+      <li>实时反映 agent 已"听到"什么</li>
+      <li>用户点节点 → 注入对话焦点</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Storyboard Editor</h3>
+    <ul>
+      <li>plan 阶段的主面板</li>
+      <li>双引擎：Tiptap（富文本）+ Vditor（markdown）</li>
+      <li>预览 / 编辑切换</li>
+      <li>AI editing lock：人 / AI 互不踩</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>PreviewPanel</h3>
+    <ul>
+      <li>preview 阶段的主面板</li>
+      <li>单页渐进渲染 + breathing overlay</li>
+      <li>HTML / PPTX tab 切换</li>
+      <li>SlideNav：缩略图导航</li>
+    </ul>
+  </div>
+
+</div>
+
+<h3 style="margin-top: 32px">版本历史</h3>
+<p style="font-size: var(--fs-sm); color: var(--ink-2); margin: 0 0 16px; max-width: 72ch;">
+每个 deck 维护版本快照。<code>GET /:id/versions</code> 列表、<code>POST /:id/versions</code> 创建快照、<code>PUT /:id/versions/current</code> 切回旧版本。
+版本里包含 storyboard、artifacts、context。适合"客户改方向了，回到三天前那版"场景。
+</p>
+
+<!-- ============================================== -->
+<h2 id="outputs"><span class="num">07</span>输出</h2>
+<p class="lede">三种输出形态可同时存在：浏览器渲染、可下载 PPTX、speaker notes 文本。</p>
+
+<div class="grid-2">
+
+  <div class="card bordered good">
+    <h3>HTML Deck</h3>
+    <ul>
+      <li>单 fragment HTML，包含所有 CSS / JS / 字体</li>
+      <li>浏览器直接演讲，按 ←/→ 切换</li>
+      <li>支持自定义动画、SVG 图表、互动元素</li>
+      <li>分享链接对外公开访问（无需登录）</li>
+      <li>导出 <code>GET /:deckId/export</code></li>
+    </ul>
+  </div>
+
+  <div class="card bordered good">
+    <h3>PPTX Deck</h3>
+    <ul>
+      <li>原生 .pptx 文件，可在 PowerPoint / Keynote 编辑</li>
+      <li>主题 theme 在 BuildModePicker 选择</li>
+      <li>下载 <code>GET /:deckId/export.pptx</code></li>
+      <li>9 个 layout 模板（见下）</li>
+    </ul>
+    <div class="chip-row">
+      <span class="chip">cover</span>
+      <span class="chip">bullets</span>
+      <span class="chip">cards</span>
+      <span class="chip">big_numbers</span>
+      <span class="chip">comparison</span>
+      <span class="chip">quote</span>
+      <span class="chip">image_caption</span>
+      <span class="chip">timeline</span>
+      <span class="chip">closing</span>
+    </div>
+  </div>
+
+</div>
+
+<h3 style="margin-top: 32px">Speaker Notes</h3>
+<p style="font-size: var(--fs-sm); color: var(--ink-2); margin: 0; max-width: 72ch;">
+<code>pp-speaker</code> talent 自动为每张幻灯片生成演讲备注 + stage direction（"这里停顿，让数字落地"）。
+内嵌在 PPTX notes 区，HTML 模式下可单独查看。
+</p>
+
+<!-- ============================================== -->
+<h2 id="admin"><span class="num">08</span>管理与运维</h2>
+<p class="lede">Admin Dashboard 是工作区拥有者的控制面板——配置 LLM 凭证、agent、模板、用量。</p>
+
+<div class="grid-2">
+
+  <div class="card">
+    <h3>Workspace 管理员能做什么</h3>
+    <ul>
+      <li>配置 Anthropic / OpenAI API key（覆盖系统默认）</li>
+      <li>切换默认模型（Opus / Sonnet / Haiku）</li>
+      <li>邀请 / 删除成员，分配角色</li>
+      <li>查看 Arx agent 实例列表 + 状态</li>
+      <li>发布自定义 deck 模板到 workspace 内部库</li>
+      <li>测试 Arx 连通性</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>用户个人设置</h3>
+    <ul>
+      <li>修改个人 profile / 头像</li>
+      <li>切换默认 workspace</li>
+      <li>主题模式（亮 / 暗 / 跟随系统）</li>
+      <li>UI 字体大小（小 / 中 / 大）</li>
+      <li>Confluence OAuth 连接管理（多组织）</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ============================================== -->
+<h2 id="deploy"><span class="num">09</span>两种部署形态</h2>
+<p class="lede">PP 有两套实现，覆盖不同企业需求。Code 共享同一 React 前端，后端 / agent 运行时不同。</p>
+
+<div class="grid-2">
+
+  <div class="card bordered">
+    <h3><span class="pill">完整版</span>EKS + Arx</h3>
+    <ul>
+      <li><strong>后端</strong>：Node.js + Express + SQLite/Postgres</li>
+      <li><strong>Agent</strong>：Arx 调度 Oasis Docker 容器，跑 Claude Code CLI</li>
+      <li><strong>能力</strong>：多 tulpa 协作、agent-in-sandbox、长会话持久化、自定义 talent</li>
+      <li><strong>适合</strong>：内部部署、企业 self-host、需要 agent 工具调用</li>
+      <li><strong>URL</strong>：<code>eks.pp.greeep.com</code>（内部 dev）</li>
+    </ul>
+  </div>
+
+  <div class="card bordered">
+    <h3><span class="pill info">轻量版</span>Cloudflare Workers</h3>
+    <ul>
+      <li><strong>后端</strong>：Cloudflare Workers + Durable Objects + D1 + R2</li>
+      <li><strong>Agent</strong>：Anthropic API 直连，可选 Sandbox container（v1.1）</li>
+      <li><strong>能力</strong>：每 workspace 自带 API key，AES-GCM 加密存储</li>
+      <li><strong>适合</strong>：SaaS 形态、需要全球边缘部署、单 agent 场景</li>
+      <li><strong>URL</strong>：<code>pitchpilot-api.langgenius-opc.workers.dev</code></li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ============================================== -->
+<h2 id="boundary"><span class="num">10</span>边界与扩展点</h2>
+
+<div class="grid-2">
+
+  <div class="card bordered bad">
+    <h3>不在范围内</h3>
+    <ul>
+      <li>不替代深度战略提案（strategic proposal）的手工撰写</li>
+      <li>不处理最高保密级客户信息（无审计 / 无合规认证）</li>
+      <li>不是通用 LLM 聊天界面（只服务 pitch 创作场景）</li>
+      <li>不做实时多人协同编辑（同一 deck 同一时刻一个 active 编辑者）</li>
+      <li>不内嵌视频 / 复杂 3D（HTML 模式可手插入，PPTX 不支持）</li>
+    </ul>
+  </div>
+
+  <div class="card bordered">
+    <h3>扩展点</h3>
+    <ul>
+      <li><strong>自定义 Talent</strong>：在 <code>app/templates/</code> 加 <code>talent.toml</code> + <code>SKILL.md</code> 即可注入新能力</li>
+      <li><strong>Brand Skill 上传</strong>：5 分钟把 PDF brand book 转 talent（规划中）</li>
+      <li><strong>Workflow 节点</strong>：通过 Arx API 暴露给 Dify workflow 调用</li>
+      <li><strong>PPTX 模板</strong>：在 <code>services/pptx-templates/</code> 加 layout 文件</li>
+      <li><strong>第三方知识源</strong>：在 routes 加新的 connector（Notion / Drive / SharePoint）</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  <div>PitchPilot Feature Reference · 2026-05-19</div>
+  <div>由 Peter Han 整理 · <a href="https://github.com/Alai-sudo/pitchpilot-bmc">View source on GitHub</a></div>
+</footer>
+
+</div>
+</body>
+</html>

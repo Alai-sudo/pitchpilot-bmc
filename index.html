@@ -76,7 +76,59 @@
   .wrap {
     max-width: 1440px;
     margin: 0 auto;
-    padding: 56px 32px 96px;
+    padding: 48px 32px 96px;
+  }
+
+  /* Top nav */
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(250, 248, 245, 0.85);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  @media (prefers-color-scheme: dark) {
+    .topnav { background: rgba(26, 24, 20, 0.85); }
+  }
+  .topnav-inner {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .brand {
+    font-weight: 600;
+    font-size: var(--fs-md);
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: -0.005em;
+  }
+  .brand .dot { color: var(--accent); }
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    font-size: var(--fs-sm);
+  }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+    font-weight: 500;
+  }
+  .nav-links a:hover { background: var(--line); color: var(--ink); }
+  .nav-links a.active { color: var(--ink); background: var(--line); }
+  @media (max-width: 640px) {
+    .topnav-inner { padding: 12px 16px; }
+  }
+  @media print {
+    .topnav { display: none; }
   }
 
   /* Header */
@@ -400,6 +452,17 @@
 </style>
 </head>
 <body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="./" class="brand">PitchPilot<span class="dot">.</span></a>
+    <div class="nav-links">
+      <a href="./" class="active">商业模式画布</a>
+      <a href="./features.html">功能说明</a>
+    </div>
+  </div>
+</nav>
+
 <div class="wrap">
 
 <header class="hero">
